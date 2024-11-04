@@ -31,6 +31,7 @@
 #include "global_config_handle.h"
 #include "group_config_handle.h"
 #include "handle.h"
+#include "normal_handle.h"
 #include "plugin_handle.h"
 #include "rest.h"
 #include "rw_handle.h"
@@ -178,6 +179,11 @@ static int dashb_plugin_request(neu_plugin_t *      plugin,
         NEU_JSON_RESPONSE_ERROR(error->error, {
             neu_http_response(header->ctx, error->error, result_error);
         });
+        break;
+    }
+    case NEU_RESP_CHECK_SCHEMA: {
+        handle_get_plugin_schema_resp(header->ctx,
+                                      (neu_resp_check_schema_t *) data);
         break;
     }
     case NEU_RESP_GET_PLUGIN:
