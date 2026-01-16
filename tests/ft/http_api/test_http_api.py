@@ -133,6 +133,7 @@ global_config_del_modbus = {
 driver_1 = {
     "name": "modbus-driver-1",
     "plugin": "Modbus TCP",
+    "tags": "",
     "params": {
         "connection_mode": 0,
         "transport_mode": 0,
@@ -180,6 +181,7 @@ driver_1 = {
 driver_2 = {
     "name": "modbus-driver-2",
     "plugin": "Modbus TCP",
+    "tags": "",
     "params": {
         "connection_mode": 0,
         "transport_mode": 0,
