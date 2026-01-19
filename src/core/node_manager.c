@@ -254,7 +254,7 @@ UT_array *neu_node_manager_filter(neu_node_manager_t *mgr, int type,
                                   const char *plugin, const char *node,
                                   bool sort_delay, bool q_state, int state,
                                   bool q_link, int link,
-                                  const char *q_group_name)
+                                  const char *q_group_name, const char *q_tags)
 {
     UT_array *     array = NULL;
     UT_icd         icd   = { sizeof(neu_resp_node_info_t), NULL, NULL, NULL };
@@ -300,6 +300,12 @@ UT_array *neu_node_manager_filter(neu_node_manager_t *mgr, int type,
                         } else {
                             utarray_free(groups);
                         }
+                    }
+                }
+
+                if (strlen(q_tags) > 0) {
+                    if (el->tags == NULL || strstr(el->tags, q_tags) == NULL) {
+                        continue;
                     }
                 }
 
