@@ -560,6 +560,7 @@ typedef struct neu_req_get_node {
         int  link;
         bool s_delay;
         char q_group_name[NEU_GROUP_NAME_LEN];
+        char q_tags[NEU_NODE_TAGS_LEN];
     } query;
 } neu_req_get_node_t;
 
