@@ -180,7 +180,6 @@ void handle_get_adapter(nng_aio *aio)
     char plugin_name[NEU_PLUGIN_NAME_LEN] = { 0 };
     char node_name[NEU_NODE_NAME_LEN]     = { 0 };
     char group_name[NEU_GROUP_NAME_LEN]   = { 0 };
-    char tags[NEU_NODE_TAGS_LEN]          = { 0 };
 
     neu_plugin_t *     plugin    = neu_rest_get_plugin();
     neu_node_type_e    node_type = { 0 };
@@ -212,10 +211,6 @@ void handle_get_adapter(nng_aio *aio)
     if (neu_http_get_param_str(aio, "group", group_name, sizeof(group_name)) >
         0) {
         strcpy(cmd.query.q_group_name, group_name);
-    }
-
-    if (neu_http_get_param_str(aio, "tags", tags, sizeof(tags)) > 0) {
-        strcpy(cmd.query.q_tags, tags);
     }
 
     uintmax_t query_state = 0;
