@@ -495,7 +495,11 @@ void neu_json_decode_write_req_free(neu_json_write_req_t *req)
     if (req->t == NEU_JSON_STR) {
         free(req->value.val_str);
     }
-    if (req->t == NEU_JSON_ARRAY_STR && req->value.val_array_str.length > 0) {
+    if (req->t == NEU_JSON_ARRAY_STR &&
+        req->value.val_array_str.p_strs != NULL) {
+        for (size_t i = 0; i < req->value.val_array_str.length; i++) {
+            free(req->value.val_array_str.p_strs[i]);
+        }
         free(req->value.val_array_str.p_strs);
     }
     if (req->t == NEU_JSON_ARRAY_INT8 && req->value.val_array_int8.length > 0) {
@@ -704,6 +708,13 @@ void neu_json_decode_write_tags_req_free(neu_json_write_tags_req_t *req)
         if (req->tags[i].t == NEU_JSON_ARRAY_BOOL &&
             req->tags[i].value.val_array_bool.length > 0) {
             free(req->tags[i].value.val_array_bool.bools);
+        }
+        if (req->tags[i].t == NEU_JSON_ARRAY_STR &&
+            req->tags[i].value.val_array_str.p_strs != NULL) {
+            for (int j = 0; j < req->tags[i].value.val_array_str.length; j++) {
+                free(req->tags[i].value.val_array_str.p_strs[j]);
+            }
+            free(req->tags[i].value.val_array_str.p_strs);
         }
     }
     free(req->tags);
@@ -1429,6 +1440,15 @@ void neu_json_decode_write_gtags_req_free(neu_json_write_gtags_req_t *req)
             if (req->groups[i].tags[k].t == NEU_JSON_ARRAY_BOOL &&
                 req->groups[i].tags[k].value.val_array_bool.length > 0) {
                 free(req->groups[i].tags[k].value.val_array_bool.bools);
+            }
+            if (req->groups[i].tags[k].t == NEU_JSON_ARRAY_STR &&
+                req->groups[i].tags[k].value.val_array_str.p_strs != NULL) {
+                for (int j = 0;
+                     j < req->groups[i].tags[k].value.val_array_str.length;
+                     j++) {
+                    free(req->groups[i].tags[k].value.val_array_str.p_strs[j]);
+                }
+                free(req->groups[i].tags[k].value.val_array_str.p_strs);
             }
         }
         if (req->groups[i].n_tag > 0) {
