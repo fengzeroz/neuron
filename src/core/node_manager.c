@@ -35,6 +35,8 @@ typedef struct node_entity {
     bool               is_monitor;
     struct sockaddr_un addr;
 
+    char *tags;
+
     UT_hash_handle hh;
 } node_entity_t;
 
@@ -42,6 +44,24 @@ struct neu_node_manager {
     node_entity_t *nodes;
     UT_array *     monitors;
 };
+
+int neu_node_manager_update_tags(neu_node_manager_t *mgr, const char *name,
+                                 const char *tags)
+{
+    node_entity_t *node = NULL;
+
+    HASH_FIND_STR(mgr->nodes, name, node);
+    if (NULL == node) {
+        return NEU_ERR_NODE_NOT_EXIST;
+    }
+
+    if (node->tags) {
+        free(node->tags);
+    }
+    node->tags = strdup(tags);
+
+    return 0;
+}
 
 neu_node_manager_t *neu_node_manager_create()
 {
@@ -69,7 +89,8 @@ void neu_node_manager_destroy(neu_node_manager_t *mgr)
     free(mgr);
 }
 
-int neu_node_manager_add(neu_node_manager_t *mgr, neu_adapter_t *adapter)
+int neu_node_manager_add(neu_node_manager_t *mgr, neu_adapter_t *adapter,
+                         const char *tags)
 {
     node_entity_t *node = calloc(1, sizeof(node_entity_t));
 
@@ -78,6 +99,7 @@ int neu_node_manager_add(neu_node_manager_t *mgr, neu_adapter_t *adapter)
     node->display = true;
     node->is_monitor =
         (0 == strcmp(node->adapter->module->module_name, "Monitor"));
+    node->tags = tags ? strdup(tags) : NULL;
 
     HASH_ADD_STR(mgr->nodes, name, node);
 
@@ -166,6 +188,9 @@ void neu_node_manager_del(neu_node_manager_t *mgr, const char *name)
                           1);
         }
         free(node->name);
+        if (node->tags) {
+            free(node->tags);
+        }
         free(node);
     }
 }
@@ -245,9 +270,36 @@ UT_array *neu_node_manager_filter(neu_node_manager_t *mgr, int type,
                     strcmp(el->adapter->module->module_name, plugin) != 0) {
                     continue;
                 }
-                if (strlen(node) > 0 &&
-                    strstr(el->adapter->name, node) == NULL) {
-                    continue;
+                if (strlen(node) > 0) {
+                    char *name_find = strstr(el->adapter->name, node);
+                    if (name_find == NULL && el->tags == NULL) {
+                        continue;
+                    }
+
+                    if (el->tags != NULL) {
+                        char node_tmp[NEU_NODE_NAME_LEN] = { 0 };
+                        strncpy(node_tmp, node, NEU_NODE_NAME_LEN - 1);
+                        size_t index                                  = 0;
+                        char   tag_split_array[10][NEU_NODE_TAGS_LEN] = { 0 };
+                        char * token = strtok(node_tmp, ",");
+                        while (token != NULL && index < 10) {
+                            strcpy(tag_split_array[index], token);
+                            index++;
+                            token = strtok(NULL, ",");
+                        }
+
+                        bool tag_found = true;
+                        for (size_t i = 0; i < index; i++) {
+                            if (strstr(el->tags, tag_split_array[i]) == NULL) {
+                                tag_found = false;
+                                break;
+                            }
+                        }
+
+                        if (!tag_found && name_find == NULL) {
+                            continue;
+                        }
+                    }
                 }
                 if (q_state) {
                     if (el->adapter->state !=
@@ -280,6 +332,7 @@ UT_array *neu_node_manager_filter(neu_node_manager_t *mgr, int type,
 
                 neu_resp_node_info_t info = { 0 };
                 strcpy(info.node, el->adapter->name);
+                strcpy(info.tags, el->tags ? el->tags : "");
                 strcpy(info.plugin, el->adapter->module->module_name);
                 if (sort_delay) {
                     neu_metric_entry_t *e = NULL;
