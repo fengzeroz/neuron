@@ -277,14 +277,13 @@ UT_array *neu_node_manager_filter(neu_node_manager_t *mgr, int type,
                     }
 
                     if (el->tags != NULL) {
+                        char node_tmp[NEU_NODE_NAME_LEN] = { 0 };
+                        strncpy(node_tmp, node, NEU_NODE_NAME_LEN - 1);
                         size_t index                                  = 0;
                         char   tag_split_array[10][NEU_NODE_TAGS_LEN] = { 0 };
-                        char * token = strtok((char *) node, ",");
-                        while (token != NULL &&
-                               index < sizeof(tag_split_array) /
-                                       sizeof(tag_split_array[0])) {
-                            strncpy(tag_split_array[index], token,
-                                    NEU_NODE_TAGS_LEN - 1);
+                        char * token = strtok(node_tmp, ",");
+                        while (token != NULL && index < 10) {
+                            strcpy(tag_split_array[index], token);
                             index++;
                             token = strtok(NULL, ",");
                         }
