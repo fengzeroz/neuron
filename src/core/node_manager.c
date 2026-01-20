@@ -271,9 +271,35 @@ UT_array *neu_node_manager_filter(neu_node_manager_t *mgr, int type,
                     continue;
                 }
                 if (strlen(node) > 0) {
-                    if (strstr(el->adapter->name, node) == NULL &&
-                        (el->tags == NULL || strstr(el->tags, node) == NULL)) {
+                    char *name_find = strstr(el->adapter->name, node);
+                    if (name_find == NULL && el->tags == NULL) {
                         continue;
+                    }
+
+                    if (el->tags != NULL) {
+                        size_t index                                  = 0;
+                        char   tag_split_array[10][NEU_NODE_TAGS_LEN] = { 0 };
+                        char * token = strtok((char *) node, ",");
+                        while (token != NULL &&
+                               index < sizeof(tag_split_array) /
+                                       sizeof(tag_split_array[0])) {
+                            strncpy(tag_split_array[index], token,
+                                    NEU_NODE_TAGS_LEN - 1);
+                            index++;
+                            token = strtok(NULL, ",");
+                        }
+
+                        bool tag_found = true;
+                        for (size_t i = 0; i < index; i++) {
+                            if (strstr(el->tags, tag_split_array[i]) == NULL) {
+                                tag_found = false;
+                                break;
+                            }
+                        }
+
+                        if (!tag_found && name_find == NULL) {
+                            continue;
+                        }
                     }
                 }
                 if (q_state) {
