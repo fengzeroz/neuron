@@ -690,10 +690,6 @@ void handle_put_node_tag(nng_aio *aio)
     NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_update_node_tag_req_t,
         neu_json_decode_update_node_tag_req, {
-            int                       ret    = 0;
-            neu_reqresp_head_t        header = { 0 };
-            neu_req_update_node_tag_t cmd    = { 0 };
-
             if (req->tags != NULL && !tags_check_symbol(req->tags)) {
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_NODE_TAGS_INVALID, {
                     neu_http_response(aio, error_code.error, result_error);
@@ -704,11 +700,13 @@ void handle_put_node_tag(nng_aio *aio)
                 });
                 neu_json_decode_update_node_tag_req_free(req);
             } else {
-                header.ctx  = aio;
-                header.type = NEU_REQ_UPDATE_NODE_TAG;
+                neu_reqresp_head_t        header = { 0 };
+                neu_req_update_node_tag_t cmd    = { 0 };
+                header.ctx                       = aio;
+                header.type                      = NEU_REQ_UPDATE_NODE_TAG;
                 strcpy(cmd.node, req->name);
                 strcpy(cmd.tags, req->tags);
-                ret = neu_plugin_op(plugin, header, &cmd);
+                int ret = neu_plugin_op(plugin, header, &cmd);
                 if (ret != 0) {
                     NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
                         neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
