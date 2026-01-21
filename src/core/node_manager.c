@@ -290,7 +290,7 @@ UT_array *neu_node_manager_filter(neu_node_manager_t *mgr, int type,
 
                         bool tag_found = true;
                         for (size_t i = 0; i < index; i++) {
-                            if (strstr(el->tags, tag_split_array[i]) == NULL) {
+                            if (strcmp(el->tags, tag_split_array[i]) != 0) {
                                 tag_found = false;
                                 break;
                             }
