@@ -340,6 +340,9 @@ int neu_http_response(nng_aio *aio, neu_err_code_e code, char *content)
     case NEU_ERR_USER_NO_PERMISSION:
     case NEU_ERR_INVALID_USER_LEN:
     case NEU_ERR_PORT_IN_USE:
+    case NEU_ERR_NODE_TAGS_TOO_MANY:
+    case NEU_ERR_NODE_TAGS_INVALID:
+    case NEU_ERR_NODE_TAGS_TOO_LONG:
         status = NNG_HTTP_STATUS_BAD_REQUEST;
         break;
     case NEU_ERR_FILE_NOT_EXIST:

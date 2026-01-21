@@ -54,6 +54,29 @@ static int tags_length(const char *tags)
     return length;
 }
 
+/*
+'!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '-', '+', '=', '[', ']', '{',
+'}',
+            ';', ':', '\'', '"', ',', '<', '>', '?', '\\', '|', '~', '`', '\t',
+'\n',
+*/
+static bool tags_check_symbol(const char *tags)
+{
+    for (size_t i = 0; i < strlen(tags); i++) {
+        char c = tags[i];
+        if (c == '!' || c == '@' || c == '#' || c == '$' || c == '%' ||
+            c == '^' || c == '&' || c == '*' || c == '(' || c == ')' ||
+            c == '-' || c == '+' || c == '=' || c == '[' || c == ']' ||
+            c == '{' || c == '}' || c == ';' || c == ':' || c == '\'' ||
+            c == '"' || c == '<' || c == '>' || c == '?' || c == '\\' ||
+            c == '|' || c == '~' || c == '`' || c == '\t' || c == '\n') {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 void handle_add_adapter(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
@@ -62,6 +85,10 @@ void handle_add_adapter(nng_aio *aio)
         aio, neu_json_add_node_req_t, neu_json_decode_add_node_req, {
             if (strlen(req->name) >= NEU_NODE_NAME_LEN) {
                 CHECK_NODE_NAME_LENGTH_ERR;
+            } else if (req->tags != NULL && !tags_check_symbol(req->tags)) {
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_NODE_TAGS_INVALID, {
+                    neu_http_response(aio, error_code.error, result_error);
+                });
             } else if (req->tags != NULL && tags_length(req->tags) > 5) {
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_NODE_TAGS_TOO_MANY, {
                     neu_http_response(aio, error_code.error, result_error);
@@ -663,26 +690,28 @@ void handle_put_node_tag(nng_aio *aio)
     NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_update_node_tag_req_t,
         neu_json_decode_update_node_tag_req, {
-            int                       ret    = 0;
-            neu_reqresp_head_t        header = { 0 };
-            neu_req_update_node_tag_t cmd    = { 0 };
-
-            if (req->tags != NULL && tags_length(req->tags) > 5) {
+            if (req->tags != NULL && !tags_check_symbol(req->tags)) {
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_NODE_TAGS_INVALID, {
+                    neu_http_response(aio, error_code.error, result_error);
+                });
+            } else if (req->tags != NULL && tags_length(req->tags) > 5) {
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_NODE_TAGS_TOO_MANY, {
                     neu_http_response(aio, error_code.error, result_error);
                 });
-                return;
-            }
-
-            header.ctx  = aio;
-            header.type = NEU_REQ_UPDATE_NODE_TAG;
-            strcpy(cmd.node, req->name);
-            strcpy(cmd.tags, req->tags);
-            ret = neu_plugin_op(plugin, header, &cmd);
-            if (ret != 0) {
-                NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
-                    neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
-                });
+                neu_json_decode_update_node_tag_req_free(req);
+            } else {
+                neu_reqresp_head_t        header = { 0 };
+                neu_req_update_node_tag_t cmd    = { 0 };
+                header.ctx                       = aio;
+                header.type                      = NEU_REQ_UPDATE_NODE_TAG;
+                strcpy(cmd.node, req->name);
+                strcpy(cmd.tags, req->tags);
+                int ret = neu_plugin_op(plugin, header, &cmd);
+                if (ret != 0) {
+                    NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
+                        neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
+                    });
+                }
             }
         })
 }

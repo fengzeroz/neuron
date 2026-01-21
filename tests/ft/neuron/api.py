@@ -68,6 +68,19 @@ def add_node(node, plugin, params=None, jwt=config.default_jwt):
         body["params"] = params
     return requests.post(url=config.BASE_URL + '/api/v2/node', headers={"Authorization": jwt}, json=body)
 
+@gen_check
+def add_node_with_tags(node, plugin, tags=None, params=None, jwt=config.default_jwt):
+    body = {"name": node, "plugin": plugin}
+    if params:
+        body["params"] = params
+    if tags:
+        body["tags"] = tags
+    return requests.post(url=config.BASE_URL + '/api/v2/node', headers={"Authorization": jwt}, json=body)
+
+@gen_check
+def update_node_tags(node, tags, jwt=config.default_jwt):
+    return requests.put(url=config.BASE_URL + '/api/v2/node/tag', headers={"Authorization": jwt}, json={"name": node, "tags": tags})
+
 
 @gen_check
 def update_node(node, new_name, jwt=config.default_jwt):
