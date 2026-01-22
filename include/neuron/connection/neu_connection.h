@@ -305,5 +305,6 @@ int is_ipv6(const char *ip);
 
 bool     neu_conn_is_connected(neu_conn_t *conn);
 uint16_t neu_conn_udp_act_port(neu_conn_t *conn);
+bool     conn_tcp_server_is_listen(neu_conn_t *conn);
 
 #endif
