@@ -589,6 +589,9 @@ static void fini_app_group(neu_json_app_group_t *grp)
     free(grp->driver);
     free(grp->group);
     free(grp->params);
+    if (grp->static_tags) {
+        free(grp->static_tags);
+    }
 }
 
 int neu_json_encode_app(void *node_json, void *param)
@@ -639,6 +642,15 @@ int neu_json_encode_app(void *node_json, void *param)
         if (grp->params && strlen(grp->params) > 0) {
             if (0 !=
                 neu_json_load_key(grp_json, "params", grp->params, false)) {
+                json_decref(grp_json);
+                return -1;
+            }
+        }
+
+        if (grp->static_tags && strlen(grp->static_tags) > 0) {
+            if (0 !=
+                neu_json_load_key(grp_json, "static_tags", grp->static_tags,
+                                  false)) {
                 json_decref(grp_json);
                 return -1;
             }
@@ -715,6 +727,8 @@ int neu_json_decode_app_json(void *node_json, neu_json_app_t *app_p)
         groups[i].driver = grp_elems[0].v.val_str;
         groups[i].group  = grp_elems[1].v.val_str;
         neu_json_dump_key(grp_json, "params", &groups[i].params, false);
+        neu_json_dump_key(grp_json, "static_tags", &groups[i].static_tags,
+                          false);
     }
 
     app_p->subscriptions.n_group = n_group;
