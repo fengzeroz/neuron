@@ -1712,12 +1712,17 @@ static int get_app_subscriptions_resp(context_t *                     ctx,
         grps[index].driver = strdup(group->driver);
         grps[index].group  = strdup(group->group);
         grps[index].params = group->params ? strdup(group->params) : NULL;
+        grps[index].static_tags =
+            group->static_tags ? strdup(group->static_tags) : NULL;
 
         if (NULL == grps[index].driver || NULL == grps[index].group) {
             for (int j = 0; j <= index; ++j) {
                 free(grps[j].driver);
                 free(grps[j].group);
                 free(grps[j].params);
+                if (grps[j].static_tags) {
+                    free(grps[j].static_tags);
+                }
             }
             free(grps);
             rv = NEU_ERR_EINTERNAL;
@@ -1817,8 +1822,10 @@ static int add_app_subscription(context_t *ctx, neu_json_app_t *app,
     strcpy(cmd.app, app->node.name);
     strcpy(cmd.driver, grp->driver);
     strcpy(cmd.group, grp->group);
-    cmd.params  = grp->params;
-    grp->params = NULL;
+    cmd.params       = grp->params;
+    cmd.static_tags  = grp->static_tags;
+    grp->params      = NULL;
+    grp->static_tags = NULL;
 
     if (0 != neu_plugin_op(plugin, header, &cmd)) {
         return NEU_ERR_IS_BUSY;
