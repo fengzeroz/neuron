@@ -101,6 +101,7 @@ typedef struct {
     char *driver;
     char *group;
     char *params;
+    char *static_tags;
 } neu_json_app_group_t;
 
 typedef struct {

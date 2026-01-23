@@ -732,6 +732,11 @@ static void conn_init_param(neu_conn_t *conn, neu_conn_param_t *param)
     }
 }
 
+bool conn_tcp_server_is_listen(neu_conn_t *conn)
+{
+    return conn->tcp_server.is_listen;
+}
+
 static void conn_tcp_server_listen(neu_conn_t *conn)
 {
     if (conn->param.type == NEU_CONN_TCP_SERVER &&
