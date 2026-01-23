@@ -52,6 +52,10 @@ int modbus_tag_to_point(const neu_datatag_t *tag, modbus_point_t *point,
         return NEU_ERR_TAG_ADDRESS_FORMAT_INVALID;
     }
 
+    if (start_address > 65536) {
+        return NEU_ERR_TAG_ADDRESS_FORMAT_INVALID;
+    }
+
     if (start_address == 65536 && address_base == 0) {
         point->start_address = 65535;
     } else if (start_address == 0 && address_base == 1) {

@@ -90,6 +90,7 @@ static void sig_handler(int sig)
     for (uint32_t i = 0; i < sizeof(c_events) / sizeof(struct client_event);
          i++) {
         if (c_events[i].fd > 0) {
+            close(c_events[i].fd);
             neu_event_del_io(events, c_events[i].client);
         }
     }
@@ -149,6 +150,11 @@ int main(int argc, char *argv[])
 
     events = neu_event_new("modbus_simulator");
     conn   = neu_conn_new(&param, NULL, connected, disconnected);
+    while (conn_tcp_server_is_listen(conn) == false) {
+        neu_msleep(1000);
+        neu_conn_destory(conn);
+        conn = neu_conn_new(&param, NULL, connected, disconnected);
+    }
 
     signal(SIGINT, sig_handler);
     signal(SIGTERM, sig_handler);
