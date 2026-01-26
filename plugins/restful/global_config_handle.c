@@ -126,6 +126,7 @@ static int add_group(context_t *                             ctx,
 static int add_tag(context_t *ctx, neu_json_add_tags_req_t *data);
 static int add_subscription(context_t *ctx, neu_json_subscribe_req_t *data);
 static int add_setting(context_t *ctx, neu_json_node_setting_req_t *data);
+static int add_app_tags(context_t *ctx, neu_json_app_t *app);
 
 static inline bool is_static_node(const char *name, const char *plugin)
 {
@@ -731,6 +732,7 @@ static void put_apps_context_next(context_t *ctx, neu_reqresp_type_e type,
         for (; ctx->idx < (size_t) apps->n_app; ++ctx->idx) {
             neu_json_app_t *app = &apps->apps[ctx->idx];
             if (is_default_app_node(app->node.name, app->node.plugin)) {
+                NEXT(ctx, add_app_tags, app);
                 if (NULL == app->node.setting) {
                     continue;
                 }
@@ -1783,6 +1785,29 @@ static int add_app_node(context_t *ctx, neu_json_app_t *app)
     }
 
     return 0;
+}
+
+static int add_app_tags(context_t *ctx, neu_json_app_t *app)
+{
+    int           ret    = 0;
+    neu_plugin_t *plugin = neu_rest_get_plugin();
+
+    neu_reqresp_head_t header = {
+        .type = NEU_REQ_UPDATE_NODE_TAG,
+        .ctx  = ctx->aio,
+    };
+
+    neu_req_update_node_tag_t cmd = { 0 };
+    strcpy(cmd.node, app->node.name);
+    if (app->node.tags != NULL) {
+        strcpy(cmd.tags, app->node.tags);
+    }
+
+    if (0 != neu_plugin_op(plugin, header, &cmd)) {
+        return NEU_ERR_IS_BUSY;
+    }
+
+    return ret;
 }
 
 static int add_app_setting(context_t *ctx, neu_json_app_t *app)
