@@ -250,6 +250,26 @@ static int neu_resp_node_info_sort(const void *a, const void *b)
     return 0;
 }
 
+static bool find_tag_in_tags(const char *tags, const char *tag)
+{
+    if (strlen(tags) == 0) {
+        return false;
+    }
+
+    char *tags_copy = strdup(tags);
+    char *saveptr   = NULL;
+    char *token     = strtok_r(tags_copy, ",", &saveptr);
+    while (token != NULL) {
+        if (strcmp(token, tag) == 0) {
+            free(tags_copy);
+            return true;
+        }
+        token = strtok_r(NULL, ",", &saveptr);
+    }
+    free(tags_copy);
+    return false;
+}
+
 UT_array *neu_node_manager_filter(neu_node_manager_t *mgr, int type,
                                   const char *plugin, const char *node,
                                   bool sort_delay, bool q_state, int state,
@@ -272,7 +292,8 @@ UT_array *neu_node_manager_filter(neu_node_manager_t *mgr, int type,
                 }
                 if (strlen(node) > 0) {
                     char *name_find = strstr(el->adapter->name, node);
-                    if (name_find == NULL && el->tags == NULL) {
+                    if (name_find == NULL &&
+                        (el->tags == NULL || strlen(el->tags) == 0)) {
                         continue;
                     }
 
@@ -290,7 +311,8 @@ UT_array *neu_node_manager_filter(neu_node_manager_t *mgr, int type,
 
                         bool tag_found = true;
                         for (size_t i = 0; i < index; i++) {
-                            if (strcmp(el->tags, tag_split_array[i]) != 0) {
+                            if (find_tag_in_tags(el->tags,
+                                                 tag_split_array[i]) == false) {
                                 tag_found = false;
                                 break;
                             }

@@ -13,6 +13,7 @@
 #include <unistd.h>
 
 #include "neuron.h"
+
 #include "connection/neu_connection.h"
 #include "event/event.h"
 #include "modbus/modbus.h"
@@ -32,9 +33,9 @@ typedef struct {
     bool            running;
     char            ip[64];
     uint16_t        port;
-    neu_events_t   *events;
+    neu_events_t *  events;
     neu_event_io_t *listen_io;
-    neu_conn_t     *conn;
+    neu_conn_t *    conn;
     pthread_t       gen_thread;
     atomic_bool     gen_stop;
     pthread_mutex_t lock;
@@ -46,8 +47,8 @@ typedef struct {
 
     bool               readonly_mask[SIM_MAX_REGS];
     neu_sim_tag_type_e tag_type[SIM_MAX_REGS];
-    char              *tag_name[SIM_MAX_REGS];
-    char              *tag_addr[SIM_MAX_REGS];
+    char *             tag_name[SIM_MAX_REGS];
+    char *             tag_addr[SIM_MAX_REGS];
     int                tag_count;
     int                last_error_code;
 } sim_ctx_t;
@@ -57,7 +58,7 @@ static sim_ctx_t g_sim = { 0 };
 struct client_event {
     neu_event_io_t *client;
     int             fd;
-    void           *user;
+    void *          user;
 };
 static struct client_event g_clients[32] = { 0 };
 
@@ -127,7 +128,7 @@ static int prng_int(int seed, int min, int max)
     x ^= x >> 17;
     x ^= x << 5;
     int span = max - min + 1;
-    return min + (int) (x % (uint32_t) (span > 0 ? span : 1));
+    return min + (int) (x % (uint32_t)(span > 0 ? span : 1));
 }
 
 static int pdu_read_holding(const uint8_t *pdu, int pdu_len,
@@ -151,7 +152,7 @@ static int pdu_read_holding(const uint8_t *pdu, int pdu_len,
     if (*res_len + 1 + 2 * nreg > res_mlen)
         return -1;
     uint8_t *res_data = res + *res_len;
-    res_data[0]       = (uint8_t) (nreg * 2);
+    res_data[0]       = (uint8_t)(nreg * 2);
     pthread_mutex_lock(&g_sim.lock);
     for (uint16_t i = 0; i < nreg; ++i) {
         uint16_t v  = g_sim.hold_regs[start + i];
@@ -185,12 +186,12 @@ static int pdu_read_input_regs(const uint8_t *pdu, int pdu_len,
     if (*res_len + 1 + 2 * nreg > res_mlen)
         return -1;
     uint8_t *res_data = res + *res_len;
-    res_data[0]       = (uint8_t) (nreg * 2);
+    res_data[0]       = (uint8_t)(nreg * 2);
     pthread_mutex_lock(&g_sim.lock);
     for (uint16_t i = 0; i < nreg; ++i) {
         uint16_t v              = g_sim.input_regs[start + i];
-        res_data[1 + i * 2]     = (uint8_t) (v >> 8);
-        res_data[1 + i * 2 + 1] = (uint8_t) (v & 0xFF);
+        res_data[1 + i * 2]     = (uint8_t)(v >> 8);
+        res_data[1 + i * 2 + 1] = (uint8_t)(v & 0xFF);
     }
     pthread_mutex_unlock(&g_sim.lock);
     *res_len += 1 + 2 * nreg;
@@ -225,7 +226,7 @@ static int pdu_read_coils(const uint8_t *pdu, int pdu_len,
     pthread_mutex_lock(&g_sim.lock);
     for (uint16_t i = 0; i < nbits; ++i) {
         if (g_sim.coil_bits[start + i]) {
-            res_data[1 + (i / 8)] |= (uint8_t) (1u << (i % 8));
+            res_data[1 + (i / 8)] |= (uint8_t)(1u << (i % 8));
         }
     }
     pthread_mutex_unlock(&g_sim.lock);
@@ -261,7 +262,7 @@ static int pdu_read_inputs(const uint8_t *pdu, int pdu_len,
     pthread_mutex_lock(&g_sim.lock);
     for (uint16_t i = 0; i < nbits; ++i) {
         if (g_sim.input_bits[start + i]) {
-            res_data[1 + (i / 8)] |= (uint8_t) (1u << (i % 8));
+            res_data[1 + (i / 8)] |= (uint8_t)(1u << (i % 8));
         }
     }
     pthread_mutex_unlock(&g_sim.lock);
@@ -271,7 +272,7 @@ static int pdu_read_inputs(const uint8_t *pdu, int pdu_len,
 }
 
 static int pdu_write_single_holding(const uint8_t *pdu, int pdu_len,
-                                    struct modbus_code   *rc,
+                                    struct modbus_code *  rc,
                                     struct modbus_header *rh, uint8_t *res,
                                     int res_mlen, int *res_len)
 {
@@ -292,7 +293,7 @@ static int pdu_write_single_holding(const uint8_t *pdu, int pdu_len,
     bool is_readonly = g_sim.readonly_mask[start];
     if (!is_readonly) {
         const uint8_t *vbytes  = pdu + offsetof(struct modbus_address, n_reg);
-        uint16_t       v       = (uint16_t) ((vbytes[0] << 8) | vbytes[1]);
+        uint16_t       v       = (uint16_t)((vbytes[0] << 8) | vbytes[1]);
         g_sim.hold_regs[start] = v;
     }
     pthread_mutex_unlock(&g_sim.lock);
@@ -314,7 +315,7 @@ static int pdu_write_single_holding(const uint8_t *pdu, int pdu_len,
 }
 
 static int pdu_write_multiple_holding(const uint8_t *pdu, int pdu_len,
-                                      struct modbus_code   *rc,
+                                      struct modbus_code *  rc,
                                       struct modbus_header *rh, uint8_t *res,
                                       int res_mlen, int *res_len)
 {
@@ -322,7 +323,7 @@ static int pdu_write_multiple_holding(const uint8_t *pdu, int pdu_len,
         (int) (sizeof(struct modbus_address) + sizeof(struct modbus_data)))
         return -1;
     struct modbus_address *addr = (struct modbus_address *) pdu;
-    struct modbus_data    *data =
+    struct modbus_data *   data =
         (struct modbus_data *) (pdu + sizeof(struct modbus_address));
     uint16_t start = ntohs(addr->start_address);
     uint16_t nreg  = ntohs(addr->n_reg);
@@ -346,7 +347,7 @@ static int pdu_write_multiple_holding(const uint8_t *pdu, int pdu_len,
     if (!deny) {
         for (uint16_t i = 0; i < nreg; ++i) {
             const uint8_t *bp          = &data->byte[i * 2];
-            uint16_t       v           = (uint16_t) ((bp[0] << 8) | bp[1]);
+            uint16_t       v           = (uint16_t)((bp[0] << 8) | bp[1]);
             g_sim.hold_regs[start + i] = v;
         }
     }
@@ -369,7 +370,7 @@ static int pdu_write_multiple_holding(const uint8_t *pdu, int pdu_len,
 }
 
 static int pdu_write_single_coil(const uint8_t *pdu, int pdu_len,
-                                 struct modbus_code   *rc,
+                                 struct modbus_code *  rc,
                                  struct modbus_header *rh, uint8_t *res,
                                  int res_mlen, int *res_len)
 {
@@ -400,7 +401,7 @@ static int pdu_write_single_coil(const uint8_t *pdu, int pdu_len,
 }
 
 static int pdu_write_multiple_coils(const uint8_t *pdu, int pdu_len,
-                                    struct modbus_code   *rc,
+                                    struct modbus_code *  rc,
                                     struct modbus_header *rh, uint8_t *res,
                                     int res_mlen, int *res_len)
 {
@@ -408,7 +409,7 @@ static int pdu_write_multiple_coils(const uint8_t *pdu, int pdu_len,
         (int) (sizeof(struct modbus_address) + sizeof(struct modbus_data)))
         return -1;
     struct modbus_address *addr = (struct modbus_address *) pdu;
-    struct modbus_data    *data =
+    struct modbus_data *   data =
         (struct modbus_data *) (pdu + sizeof(struct modbus_address));
     uint16_t start = ntohs(addr->start_address);
     uint16_t nbits = ntohs(addr->n_reg);
@@ -446,8 +447,8 @@ static inline void sim_update_sine_hi_lo(uint16_t addr, int64_t tms)
         uint32_t u;
     } fu;
     fu.f        = fval;
-    uint16_t lo = (uint16_t) (fu.u & 0xFFFFu);
-    uint16_t hi = (uint16_t) ((fu.u >> 16) & 0xFFFFu);
+    uint16_t lo = (uint16_t)(fu.u & 0xFFFFu);
+    uint16_t hi = (uint16_t)((fu.u >> 16) & 0xFFFFu);
     if (addr + 1 < SIM_MAX_REGS) {
         g_sim.hold_regs[addr]     = hi;
         g_sim.hold_regs[addr + 1] = lo;
@@ -471,7 +472,7 @@ static inline void sim_update_square(uint16_t addr, int64_t tms)
     int64_t period_ms     = 10000;
     int64_t phase         = tms % period_ms;
     int     v             = (phase < (period_ms / 2)) ? -10 : 10;
-    g_sim.hold_regs[addr] = (uint16_t) (int16_t) v;
+    g_sim.hold_regs[addr] = (uint16_t)(int16_t) v;
 }
 
 static inline void sim_update_random(uint16_t addr, int64_t tms)
@@ -520,10 +521,21 @@ static int add_client(int fd, neu_event_io_t *client, void *user)
     return -1;
 }
 
+static void clean_client()
+{
+    for (size_t i = 0; i < sizeof(g_clients) / sizeof(g_clients[0]); ++i) {
+        if (g_clients[i].fd != 0) {
+            close(g_clients[i].fd);
+            g_clients[i].fd = 0;
+        }
+    }
+}
+
 static neu_event_io_t *del_client(int fd)
 {
     for (size_t i = 0; i < sizeof(g_clients) / sizeof(g_clients[0]); ++i) {
         if (g_clients[i].fd == fd) {
+            close(g_clients[i].fd);
             g_clients[i].fd = 0;
             return g_clients[i].client;
         }
@@ -553,7 +565,7 @@ static int process_modbus_tcp(uint8_t *req, uint16_t req_len, uint8_t *res,
 
     memcpy(res, req, sizeof(struct modbus_header));
     struct modbus_header *rh = (struct modbus_header *) res;
-    struct modbus_code   *c =
+    struct modbus_code *  c =
         (struct modbus_code *) (req + sizeof(struct modbus_header));
     struct modbus_code *rc =
         (struct modbus_code *) (res + sizeof(struct modbus_header));
@@ -656,7 +668,7 @@ static int listen_io_cb(enum neu_event_io_type type, int lfd, void *usr)
     if (type == NEU_EVENT_IO_READ) {
         int cfd = neu_conn_tcp_server_accept(g_sim.conn);
         if (cfd > 0) {
-            struct cycle_buf    *buf = calloc(1, sizeof(struct cycle_buf));
+            struct cycle_buf *   buf = calloc(1, sizeof(struct cycle_buf));
             neu_event_io_param_t cio = {
                 .fd       = cfd,
                 .usr_data = buf,
@@ -700,7 +712,7 @@ static char *sim_build_tags_json_unlocked(void)
         if (tp == NEU_SIM_TAG_NONE) {
             continue;
         }
-        json_t     *obj  = json_object();
+        json_t *    obj  = json_object();
         const char *name = g_sim.tag_name[idx] ? g_sim.tag_name[idx] : "";
         const char *addr = g_sim.tag_addr[idx] ? g_sim.tag_addr[idx] : "";
         json_object_set_new(obj, "name", json_string(name));
@@ -730,9 +742,9 @@ static void sim_persist_save(void)
     pthread_mutex_unlock(&g_sim.lock);
 
     sqlite3_stmt *stmt = NULL;
-    const char   *sql  = "INSERT OR REPLACE INTO modbus_tcp_simulator (id, "
-                         "enabled, tags_json, updated_at) "
-                         "VALUES (1, ?, ?, CURRENT_TIMESTAMP)";
+    const char *  sql  = "INSERT OR REPLACE INTO modbus_tcp_simulator (id, "
+                      "enabled, tags_json, updated_at) "
+                      "VALUES (1, ?, ?, CURRENT_TIMESTAMP)";
     if (SQLITE_OK == sqlite3_prepare_v2(db, sql, -1, &stmt, NULL)) {
         sqlite3_bind_int(stmt, 1, enabled);
         if (tags) {
@@ -755,7 +767,7 @@ static void sim_persist_load_and_apply(void)
         return;
     }
     sqlite3_stmt *stmt = NULL;
-    const char   *sql =
+    const char *  sql =
         "SELECT enabled, tags_json FROM modbus_tcp_simulator WHERE id=1";
     if (SQLITE_OK != sqlite3_prepare_v2(db, sql, -1, &stmt, NULL)) {
         return;
@@ -768,12 +780,12 @@ static void sim_persist_load_and_apply(void)
 
         if (tags_str && tags_str[0]) {
             json_error_t jerr;
-            json_t      *arr = json_loads(tags_str, 0, &jerr);
+            json_t *     arr = json_loads(tags_str, 0, &jerr);
             if (arr && json_is_array(arr)) {
                 size_t              count   = json_array_size(arr);
-                char              **names   = NULL;
-                char              **addrs   = NULL;
-                uint16_t           *indices = NULL;
+                char **             names   = NULL;
+                char **             addrs   = NULL;
+                uint16_t *          indices = NULL;
                 neu_sim_tag_type_e *types   = NULL;
                 if (count > 0) {
                     names   = calloc(count, sizeof(char *));
@@ -794,18 +806,18 @@ static void sim_persist_load_and_apply(void)
                         continue;
                     uint16_t idx = (uint16_t) json_integer_value(jidx);
                     int      tpv = json_is_integer(jtype)
-                             ? (int) json_integer_value(jtype)
-                             : 0;
+                        ? (int) json_integer_value(jtype)
+                        : 0;
                     if (idx >= SIM_MAX_REGS)
                         continue;
                     indices[m] = idx;
                     types[m]   = (neu_sim_tag_type_e) tpv;
                     names[m]   = jname && json_is_string(jname)
-                          ? strdup(json_string_value(jname))
-                          : strdup("");
-                    addrs[m]   = jaddr && json_is_string(jaddr)
-                          ? strdup(json_string_value(jaddr))
-                          : strdup("");
+                        ? strdup(json_string_value(jname))
+                        : strdup("");
+                    addrs[m] = jaddr && json_is_string(jaddr)
+                        ? strdup(json_string_value(jaddr))
+                        : strdup("");
                     ++m;
                 }
                 if (m > 0) {
@@ -877,7 +889,7 @@ int neu_modbus_simulator_init(const char *config_dir)
             if (buf && sz > 0) {
                 fread(buf, 1, (size_t) sz, fp);
                 json_error_t jerr;
-                json_t      *root = json_loads(buf, 0, &jerr);
+                json_t *     root = json_loads(buf, 0, &jerr);
                 if (root) {
                     json_t *sim = json_object_get(root, "modbus_simulator");
                     if (!sim) {
@@ -921,6 +933,7 @@ static void sim_do_stop(bool persist)
     if (!g_sim.running) {
         return;
     }
+    clean_client();
     atomic_store(&g_sim.gen_stop, true);
     if (g_sim.gen_thread) {
         pthread_join(g_sim.gen_thread, NULL);
@@ -957,9 +970,9 @@ int neu_modbus_simulator_start(const char *ip, uint16_t port)
         return 0;
     }
     if (ip && *ip) {
-        if ((void*)g_sim.ip != (void*)ip) {
-             memset(g_sim.ip, 0, sizeof(g_sim.ip));
-             strncpy(g_sim.ip, ip, sizeof(g_sim.ip) - 1);
+        if ((void *) g_sim.ip != (void *) ip) {
+            memset(g_sim.ip, 0, sizeof(g_sim.ip));
+            strncpy(g_sim.ip, ip, sizeof(g_sim.ip) - 1);
         }
     } else {
         memset(g_sim.ip, 0, sizeof(g_sim.ip));
@@ -1011,7 +1024,7 @@ void neu_modbus_simulator_stop(void)
 }
 
 int neu_modbus_simulator_config_tags(const char **names, const char **addr_strs,
-                                     const uint16_t           *addresses,
+                                     const uint16_t *          addresses,
                                      const neu_sim_tag_type_e *types,
                                      int                       tag_count)
 {
@@ -1058,7 +1071,7 @@ char *neu_modbus_simulator_export_drivers_json(void)
     json_array_append_new(nodes, node);
     json_object_set_new(node, "plugin", json_string("Modbus TCP"));
     json_object_set_new(node, "name", json_string("ModbusTCP_Simulator"));
-    json_t     *params = json_object();
+    json_t *    params = json_object();
     const char *host = (strcmp(g_sim.ip, "0.0.0.0") == 0 || g_sim.ip[0] == '\0')
         ? "127.0.0.1"
         : g_sim.ip;
