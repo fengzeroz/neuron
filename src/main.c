@@ -59,6 +59,7 @@ static void sig_handler(int sig)
 
     if (!sig_trigger) {
         if (sig == SIGINT || sig == SIGTERM) {
+            neu_modbus_simulator_fini();
             neu_manager_destroy(g_manager);
             neu_persister_destroy();
             zlog_fini();

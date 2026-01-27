@@ -98,6 +98,9 @@ def get_nodes(type, jwt=config.default_jwt, group=""):
     else:
         return requests.get(url=config.BASE_URL + '/api/v2/node?group=' + group, headers={"Authorization": jwt}, params={"type": type})
 
+def get_nodes_by_tags(type, tags, jwt=config.default_jwt):
+    return requests.get(url=config.BASE_URL + '/api/v2/node', headers={"Authorization": jwt}, params={"type": type, "node": tags})
+
 
 @gen_check
 def node_ctl(node, ctl, jwt=config.default_jwt):
