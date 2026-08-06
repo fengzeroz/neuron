@@ -284,6 +284,10 @@ UT_array *neu_plugin_manager_get(neu_plugin_manager_t *mgr)
     utarray_new(plugins, &icd);
     HASH_ITER(hh, mgr->plugins, el, tmp)
     {
+        if (strcmp(el->name, "neuron-license-server") == 0) {
+            continue;
+        }
+
         neu_resp_plugin_info_t info = {
             .kind    = el->kind,
             .type    = el->type,
