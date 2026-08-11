@@ -89,6 +89,48 @@ TEST(validate_deep_success, schema)
     free(vts);
 }
 
+TEST(validate_constants, schema)
+{
+    const char *schema =
+        "{\"string\":\"value\",\"integer\":1234,\"float\":11.44,"
+        "\"boolean\":true,\"object\":{\"integer\":-42,\"float\":0.5,"
+        "\"boolean\":false}}";
+    mqtt_schema_vt_t *vts = NULL;
+    size_t            n_vts;
+    int               ret = mqtt_schema_validate(schema, &vts, &n_vts);
+
+    ASSERT_EQ(ret, 0);
+    ASSERT_EQ(n_vts, 5);
+    EXPECT_EQ(vts[0].jtype, NEU_JSON_STR);
+    EXPECT_STREQ(vts[0].ud, "value");
+    EXPECT_EQ(vts[1].jtype, NEU_JSON_INT);
+    EXPECT_EQ(vts[1].jvalue.val_int, 1234);
+    EXPECT_EQ(vts[2].jtype, NEU_JSON_DOUBLE);
+    EXPECT_EQ(vts[2].jvalue.val_double, 11.44);
+    EXPECT_EQ(vts[3].jtype, NEU_JSON_BOOL);
+    EXPECT_TRUE(vts[3].jvalue.val_bool);
+
+    ASSERT_EQ(vts[4].vt, MQTT_SCHEMA_OBJECT);
+    ASSERT_EQ(vts[4].n_sub_vts, 3);
+    EXPECT_EQ(vts[4].sub_vts[0].jvalue.val_int, -42);
+    EXPECT_EQ(vts[4].sub_vts[1].jvalue.val_double, 0.5);
+    EXPECT_FALSE(vts[4].sub_vts[2].jvalue.val_bool);
+
+    char *               result = NULL;
+    neu_json_read_resp_t tags   = { 0 };
+    ret = mqtt_schema_encode((char *) "driver", (char *) "group", &tags, vts,
+                             n_vts, NULL, 0, &result);
+    ASSERT_EQ(ret, 0);
+    EXPECT_STREQ(result,
+                 "{\"string\": \"value\", \"integer\": 1234, \"float\": "
+                 "11.44, \"boolean\": true, \"object\": {\"integer\": -42, "
+                 "\"float\": 0.5, \"boolean\": false}}");
+
+    free(result);
+    free(vts[4].sub_vts);
+    free(vts);
+}
+
 TEST(validate_failed, schema)
 {
     const char *schema =
