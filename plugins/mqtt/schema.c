@@ -49,9 +49,30 @@ static int mqtt_schema_parse(json_t *root, mqtt_schema_vt_t **vts,
                     str_val[strlen(str_val) - 1] == '}') {
                     return -1;
                 } else {
-                    vt->vt = MQTT_SCHEMA_UD;
+                    vt->vt    = MQTT_SCHEMA_UD;
+                    vt->jtype = NEU_JSON_STR;
                     strncpy(vt->ud, str_val, sizeof(vt->ud) - 1);
                 }
+            }
+        } else if (json_is_integer(value) || json_is_real(value) ||
+                   json_is_boolean(value)) {
+            *vts_len += 1;
+            *vts = realloc(*vts, *vts_len * sizeof(mqtt_schema_vt_t));
+            mqtt_schema_vt_t *vt = &(*vts)[*vts_len - 1];
+
+            memset(vt, 0, sizeof(mqtt_schema_vt_t));
+            strncpy(vt->name, key, sizeof(vt->name) - 1);
+            vt->vt = MQTT_SCHEMA_UD;
+
+            if (json_is_integer(value)) {
+                vt->jtype          = NEU_JSON_INT;
+                vt->jvalue.val_int = json_integer_value(value);
+            } else if (json_is_real(value)) {
+                vt->jtype             = NEU_JSON_DOUBLE;
+                vt->jvalue.val_double = json_real_value(value);
+            } else {
+                vt->jtype           = NEU_JSON_BOOL;
+                vt->jvalue.val_bool = json_boolean_value(value);
             }
         } else if (json_is_object(value)) {
             if (deep >= 3) {
@@ -280,8 +301,12 @@ static void *schema_encode(char *driver, char *group,
             break;
         }
         case MQTT_SCHEMA_UD:
-            elem.t         = NEU_JSON_STR;
-            elem.v.val_str = vts[i].ud;
+            elem.t = vts[i].jtype;
+            if (vts[i].jtype == NEU_JSON_STR) {
+                elem.v.val_str = vts[i].ud;
+            } else {
+                elem.v = vts[i].jvalue;
+            }
             break;
         case MQTT_SCHEMA_OBJECT: {
             void *sub_root = schema_encode(driver, group, tags, vts[i].sub_vts,
