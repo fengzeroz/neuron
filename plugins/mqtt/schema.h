@@ -53,6 +53,9 @@ typedef struct mqtt_schema_vt {
 
     char ud[128];
 
+    neu_json_type_e  jtype;
+    neu_json_value_u jvalue;
+
     mqtt_schema_vt_t *sub_vts;
     size_t            n_sub_vts;
 } mqtt_schema_vt_t;
