@@ -1889,7 +1889,10 @@ static void start_single_adapter(neu_manager_t *manager, const char *name,
     adapter             = neu_adapter_create(&adapter_info, true);
 
     neu_node_manager_add_single(manager->node_manager, adapter, display);
-    manager_storage_add_node(manager, name, "");
+    if (strncmp(adapter_info.module->module_name, "neuron-license-server",
+                24) != 0) {
+        manager_storage_add_node(manager, name, "");
+    }
 
     neu_adapter_init(adapter, false);
     neu_adapter_start_single(adapter);
