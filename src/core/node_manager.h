@@ -63,6 +63,7 @@ UT_array *     neu_node_manager_get_adapter(neu_node_manager_t *mgr, int type);
 neu_adapter_t *neu_node_manager_find(neu_node_manager_t *mgr, const char *name);
 bool neu_node_manager_is_single(neu_node_manager_t *mgr, const char *name);
 bool neu_node_manager_is_driver(neu_node_manager_t *mgr, const char *name);
+bool neu_node_manager_is_exist(neu_node_manager_t *mgr, const char *name);
 
 // addr array
 UT_array *neu_node_manager_get_addrs(neu_node_manager_t *mgr, int type);

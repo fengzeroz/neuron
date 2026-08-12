@@ -152,6 +152,8 @@ neu_manager_t *neu_manager_create()
         nlog_warn("load plugin error");
     }
 
+    manager_load_node(manager);
+
     UT_array *single_plugins =
         neu_plugin_manager_get_single(manager->plugin_manager);
 
@@ -162,7 +164,6 @@ neu_manager_t *neu_manager_create()
     }
     utarray_free(single_plugins);
 
-    manager_load_node(manager);
     while (neu_node_manager_exist_uninit(manager->node_manager)) {
         usleep(1000 * 100);
     }
@@ -1866,6 +1867,11 @@ static void start_static_adapter(neu_manager_t *manager, const char *name)
 static void start_single_adapter(neu_manager_t *manager, const char *name,
                                  const char *plugin_name, bool display)
 {
+    if (neu_node_manager_is_exist(manager->node_manager, name)) {
+        nlog_warn("adapter %s already exist", name);
+        return;
+    }
+
     neu_adapter_t *       adapter      = NULL;
     neu_plugin_instance_t instance     = { 0 };
     neu_adapter_info_t    adapter_info = {
@@ -1883,9 +1889,7 @@ static void start_single_adapter(neu_manager_t *manager, const char *name,
     adapter             = neu_adapter_create(&adapter_info, true);
 
     neu_node_manager_add_single(manager->node_manager, adapter, display);
-    if (display) {
-        manager_storage_add_node(manager, name, "");
-    }
+    manager_storage_add_node(manager, name, "");
 
     neu_adapter_init(adapter, false);
     neu_adapter_start_single(adapter);

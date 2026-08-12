@@ -459,6 +459,18 @@ bool neu_node_manager_is_driver(neu_node_manager_t *mgr, const char *name)
     return false;
 }
 
+bool neu_node_manager_is_exist(neu_node_manager_t *mgr, const char *name)
+{
+    node_entity_t *node = NULL;
+
+    HASH_FIND_STR(mgr->nodes, name, node);
+    if (node != NULL) {
+        return true;
+    }
+
+    return false;
+}
+
 UT_array *neu_node_manager_get_addrs(neu_node_manager_t *mgr, int type)
 {
     UT_icd         icd   = { sizeof(struct sockaddr_un), NULL, NULL, NULL };
