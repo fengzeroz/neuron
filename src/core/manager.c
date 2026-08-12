@@ -152,8 +152,6 @@ neu_manager_t *neu_manager_create()
         nlog_warn("load plugin error");
     }
 
-    manager_load_node(manager);
-
     UT_array *single_plugins =
         neu_plugin_manager_get_single(manager->plugin_manager);
 
@@ -164,6 +162,7 @@ neu_manager_t *neu_manager_create()
     }
     utarray_free(single_plugins);
 
+    manager_load_node(manager);
     while (neu_node_manager_exist_uninit(manager->node_manager)) {
         usleep(1000 * 100);
     }
