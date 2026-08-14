@@ -307,7 +307,7 @@ Neuron 将为 IIoT 平台提供一系列 API 服务，用于查询基本信息�
 
 **type**  必需
 
-**plugin** 可选
+**plugin** 可选，支持逗号分隔多个插件名，如 `plugin=Modbus TCP,Modbus RTU`
 
 **node** 可选
 

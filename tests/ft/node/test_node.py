@@ -59,6 +59,33 @@ class TestNode:
         assert 200 == response.status_code
         assert "mqtt" == response.json()['nodes'][0]["name"]
 
+    @description(given="a driver node", when="get driver node by single plugin", then="get success")
+    def test_get_driver_by_single_plugin(self):
+        response = api.get_nodes(type=NEU_NODE_DRIVER, plugins=[PLUGIN_MODBUS_TCP])
+        assert 200 == response.status_code
+        assert 1 == len(response.json()['nodes'])
+        assert "modbus-tcp" == response.json()['nodes'][0]["name"]
+
+    @description(given="driver and app nodes", when="get driver nodes by multiple plugins", then="get success")
+    def test_get_driver_by_multiple_plugins(self):
+        response = api.get_nodes(type=NEU_NODE_DRIVER, plugins=[PLUGIN_MODBUS_TCP, PLUGIN_MODBUS_RTU])
+        assert 200 == response.status_code
+        assert 1 == len(response.json()['nodes'])
+        assert "modbus-tcp" == response.json()['nodes'][0]["name"]
+
+    @description(given="driver node and non-existent plugin", when="get driver node by plugins with unmatched", then="get success")
+    def test_get_driver_by_plugin_with_unmatched(self):
+        response = api.get_nodes(type=NEU_NODE_DRIVER, plugins=[PLUGIN_MODBUS_TCP, "non-existent-plugin"])
+        assert 200 == response.status_code
+        assert 1 == len(response.json()['nodes'])
+        assert "modbus-tcp" == response.json()['nodes'][0]["name"]
+
+    @description(given="driver node", when="get driver node by plugins no match", then="get empty")
+    def test_get_driver_by_plugin_no_match(self):
+        response = api.get_nodes(type=NEU_NODE_DRIVER, plugins=[PLUGIN_MODBUS_RTU])
+        assert 200 == response.status_code
+        assert [] == response.json()['nodes']
+
     @description(given="existent driver node", when="update the node name to empty string", then="update failed")
     def test_update_node_name_to_empty(self):
         response = api.update_node(node="modbus-tcp", new_name="")

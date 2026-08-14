@@ -299,7 +299,7 @@ Neuron provide a series of API services for IIoT platform, to query the basic in
 
 **type**  required
 
-**plugin** optional
+**plugin** optional, support multiple plugin names separated by comma, e.g. `plugin=Modbus TCP,Modbus RTU`
 
 **node** optional
 
