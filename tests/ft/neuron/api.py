@@ -94,11 +94,13 @@ def del_node(node, jwt=config.default_jwt):
     return requests.delete(url=config.BASE_URL + '/api/v2/node', headers={"Authorization": jwt}, json={"name": node})
 
 
-def get_nodes(type, jwt=config.default_jwt, group=""):
-    if group == "":
-        return requests.get(url=config.BASE_URL + '/api/v2/node', headers={"Authorization": jwt}, params={"type": type})
-    else:
-        return requests.get(url=config.BASE_URL + '/api/v2/node?group=' + group, headers={"Authorization": jwt}, params={"type": type})
+def get_nodes(type, jwt=config.default_jwt, group="", plugins=None):
+    params = {"type": type}
+    if plugins:
+        params["plugin"] = ",".join(plugins)
+    if group != "":
+        params["group"] = group
+    return requests.get(url=config.BASE_URL + '/api/v2/node', headers={"Authorization": jwt}, params=params)
 
 
 def get_nodes_by_tags(type, tags, jwt=config.default_jwt):

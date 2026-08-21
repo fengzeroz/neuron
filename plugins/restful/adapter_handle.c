@@ -203,10 +203,10 @@ void handle_del_adapter(nng_aio *aio)
 
 void handle_get_adapter(nng_aio *aio)
 {
-    int  ret                              = 0;
-    char plugin_name[NEU_PLUGIN_NAME_LEN] = { 0 };
-    char node_name[NEU_NODE_NAME_LEN]     = { 0 };
-    char group_name[NEU_GROUP_NAME_LEN]   = { 0 };
+    int  ret                                                      = 0;
+    char plugin_name[NEU_PLUGIN_FILTER_MAX * NEU_PLUGIN_NAME_LEN] = { 0 };
+    char node_name[NEU_NODE_NAME_LEN]                             = { 0 };
+    char group_name[NEU_GROUP_NAME_LEN]                           = { 0 };
 
     neu_plugin_t *     plugin    = neu_rest_get_plugin();
     neu_node_type_e    node_type = { 0 };
@@ -226,9 +226,40 @@ void handle_get_adapter(nng_aio *aio)
         return;
     }
 
-    if (neu_http_get_param_str(aio, "plugin", plugin_name,
-                               sizeof(plugin_name)) > 0) {
-        strncpy(cmd.plugin, plugin_name, NEU_PLUGIN_NAME_LEN - 1);
+    ssize_t plugin_len =
+        neu_http_get_param_str(aio, "plugin", plugin_name, sizeof(plugin_name));
+    if (plugin_len > 0) {
+        if (plugin_len >= (ssize_t) sizeof(plugin_name)) {
+            NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
+                neu_http_response(aio, error_code.error, result_error);
+            })
+            return;
+        }
+
+        char *save = NULL;
+        char *p    = strtok_r(plugin_name, ",", &save);
+        while (p != NULL) {
+            while (' ' == *p || '\t' == *p) {
+                p++;
+            }
+            size_t len = strlen(p);
+            while (len > 0 && (' ' == p[len - 1] || '\t' == p[len - 1])) {
+                p[--len] = '\0';
+            }
+            if (len == 0) {
+                p = strtok_r(NULL, ",", &save);
+                continue;
+            }
+            if (cmd.n_plugin >= NEU_PLUGIN_FILTER_MAX) {
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
+                    neu_http_response(aio, error_code.error, result_error);
+                })
+                return;
+            }
+            strncpy(cmd.plugin[cmd.n_plugin], p, NEU_PLUGIN_NAME_LEN - 1);
+            cmd.n_plugin++;
+            p = strtok_r(NULL, ",", &save);
+        }
     }
 
     if (neu_http_get_param_str(aio, "node", node_name, sizeof(node_name)) > 0) {

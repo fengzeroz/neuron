@@ -59,7 +59,8 @@ int       neu_manager_add_node(neu_manager_t *manager, const char *node_name,
                                bool load);
 int       neu_manager_del_node(neu_manager_t *manager, const char *node_name);
 UT_array *neu_manager_get_nodes(neu_manager_t *manager, int type,
-                                const char *plugin, const char *node,
+                                const char (*plugins)[NEU_PLUGIN_NAME_LEN],
+                                int n_plugins, const char *node,
                                 bool sort_delay, bool q_state, int state,
                                 bool q_link, int link,
                                 const char *q_group_name);

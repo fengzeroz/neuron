@@ -495,8 +495,11 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         neu_req_del_plugin_t *cmd = (neu_req_del_plugin_t *) &header[1];
         neu_resp_error_t      e   = { 0 };
 
+        char plugins[1][NEU_PLUGIN_NAME_LEN] = { 0 };
+        strncpy(plugins[0], cmd->plugin, NEU_PLUGIN_NAME_LEN - 1);
+
         UT_array *nodes = neu_manager_get_nodes(
-            manager, NEU_NA_TYPE_DRIVER | NEU_NA_TYPE_APP, cmd->plugin, "",
+            manager, NEU_NA_TYPE_DRIVER | NEU_NA_TYPE_APP, plugins, 1, "",
             false, false, 0, false, 0, "");
 
         if (nodes != NULL) {
@@ -690,8 +693,11 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             break;
         }
 
+        char plugins[1][NEU_PLUGIN_NAME_LEN] = { 0 };
+        strncpy(plugins[0], module_name, NEU_PLUGIN_NAME_LEN - 1);
+
         UT_array *nodes = neu_manager_get_nodes(
-            manager, NEU_NA_TYPE_DRIVER | NEU_NA_TYPE_APP, module_name, "",
+            manager, NEU_NA_TYPE_DRIVER | NEU_NA_TYPE_APP, plugins, 1, "",
             false, false, 0, false, 0, "");
 
         if (nodes != NULL) {
@@ -957,9 +963,9 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQ_GET_NODE: {
         neu_req_get_node_t *cmd   = (neu_req_get_node_t *) &header[1];
         UT_array *          nodes = neu_manager_get_nodes(
-            manager, cmd->type, cmd->plugin, cmd->node, cmd->query.s_delay,
-            cmd->query.q_state, cmd->query.state, cmd->query.q_link,
-            cmd->query.link, cmd->query.q_group_name);
+            manager, cmd->type, cmd->plugin, cmd->n_plugin, cmd->node,
+            cmd->query.s_delay, cmd->query.q_state, cmd->query.state,
+            cmd->query.q_link, cmd->query.link, cmd->query.q_group_name);
         neu_resp_get_node_t resp = { .nodes = nodes };
 
         header->type = NEU_RESP_GET_NODE;
