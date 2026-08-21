@@ -272,7 +272,8 @@ static bool find_tag_in_tags(const char *tags, const char *tag)
 }
 
 UT_array *neu_node_manager_filter(neu_node_manager_t *mgr, int type,
-                                  const char *plugin, const char *node,
+                                  const char (*plugins)[NEU_PLUGIN_NAME_LEN],
+                                  int n_plugins, const char *node,
                                   bool sort_delay, bool q_state, int state,
                                   bool q_link, int link,
                                   const char *q_group_name)
@@ -287,9 +288,18 @@ UT_array *neu_node_manager_filter(neu_node_manager_t *mgr, int type,
     {
         if (!el->is_static && el->display) {
             if (el->adapter->module->type & type) {
-                if (strlen(plugin) > 0 &&
-                    strcmp(el->adapter->module->module_name, plugin) != 0) {
-                    continue;
+                if (n_plugins > 0) {
+                    bool matched = false;
+                    for (int i = 0; i < n_plugins; i++) {
+                        if (strcmp(el->adapter->module->module_name,
+                                   plugins[i]) == 0) {
+                            matched = true;
+                            break;
+                        }
+                    }
+                    if (!matched) {
+                        continue;
+                    }
                 }
                 if (strlen(node) > 0) {
                     char *name_find = strstr(el->adapter->name, node);
